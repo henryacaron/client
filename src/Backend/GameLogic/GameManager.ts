@@ -41,6 +41,7 @@ import {
   UnconfirmedInit,
   UnconfirmedMove,
   UnconfirmedPlanetTransfer,
+  UnconfirmedUseSpecial,
   UnconfirmedProspectPlanet,
   UnconfirmedReveal,
   UnconfirmedUpgrade,
@@ -120,7 +121,7 @@ import {
   isUnconfirmedWithdrawArtifact,
   isUnconfirmedWithdrawSilver,
 } from '../Utils/TypeAssertions';
-import { getRandomActionId, hexifyBigIntNestedArray } from '../Utils/Utils';
+import { getRandomActionId, hexifyBigIntNestedArray, shrinkAlgorithm } from '../Utils/Utils';
 import { getEmojiMessage, getRange } from './ArrivalUtils';
 import { isActivated } from './ArtifactUtils';
 import { ContractsAPI, makeContractsAPI } from './ContractsAPI';
@@ -301,6 +302,13 @@ class GameManager extends EventEmitter {
   private worldRadius: number;
 
   /**
+   * Sometimes the universe gets bigger... Sometimes it doesn't.
+   *
+   * @todo move this into a new `GameConfiguration` class.
+   */
+  private intialWorldRadius: number;
+
+  /**
    * Emits whenever we load the network health summary from the webserver, which is derived from
    * diagnostics that the client sends up to the webserver as well.
    */
@@ -376,6 +384,7 @@ class GameManager extends EventEmitter {
 
     this.contractConstants = contractConstants;
     this.homeLocation = homeLocation;
+    this.intialWorldRadius = contractConstants.INITIAL_WORLD_RADIUS;
 
     const revealedLocations = new Map<LocationId, RevealedLocation>();
     for (const [locationId, coords] of revealedCoords) {
@@ -477,9 +486,9 @@ class GameManager extends EventEmitter {
         const player = this.players.get(entry.ethAddress);
         if (player) {
           // current player's score is updated via `this.playerInterval`
-          if (player.address !== this.account && entry.score !== undefined) {
-            player.score = entry.score;
-          }
+          // if (player.address !== this.account && entry.score !== undefined) {
+          //   player.score = entry.score;
+          // }
         }
       }
 
@@ -644,6 +653,17 @@ class GameManager extends EventEmitter {
           }
         }
       )
+      .on(
+        ContractsAPIEvent.PlanetHijacked,
+        async (newOwner: EthAddress, planetId: LocationId) => {
+          await gameManager.hardRefreshPlanet(planetId);
+          const planetAfter = gameManager.getPlanetWithId(planetId);
+
+          if (planetAfter && newOwner === gameManager.account) {
+            NotificationManager.getInstance().receivedPlanet(planetAfter);
+          }
+        }
+      )
       .on(ContractsAPIEvent.PlayerUpdate, async (playerId: EthAddress) => {
         await gameManager.hardRefreshPlayer(playerId);
       })
@@ -752,6 +772,7 @@ class GameManager extends EventEmitter {
       })
       .on(ContractsAPIEvent.RadiusUpdated, async () => {
         const newRadius = await gameManager.contractsAPI.getWorldRadius();
+        console.log("radius updated event",newRadius);
         gameManager.setRadius(newRadius);
       });
 
@@ -1796,17 +1817,34 @@ class GameManager extends EventEmitter {
         spawnInnerRadius = 0;
       }
 
+      let discUpperBound: number, discLowerBound: number, radius: number;
+      if(this.contractConstants.SHRINK > 0) {
+        discUpperBound = this.contractConstants.DISC_UPPER_BOUND / 100;
+        discLowerBound = this.contractConstants.DISC_LOWER_BOUND / 100;
+        const fiveMinutesInSeconds = 5 * 60;
+        const futureRadius = this.expectedRadius(Date.now() / 1000 + fiveMinutesInSeconds);
+        console.log("curr radius", this.worldRadius, "future radius", futureRadius);
+        radius = futureRadius
+      }
+    else {
+        discUpperBound = this.worldRadius;
+        discLowerBound = 0;
+        radius = this.worldRadius;
+      }
+
       do {
         // sample from square
-        x = Math.random() * this.worldRadius * 2 - this.worldRadius;
-        y = Math.random() * this.worldRadius * 2 - this.worldRadius;
+        x = Math.random() * radius * 2 - radius;
+        y = Math.random() * radius * 2 - radius;
         d = Math.sqrt(x ** 2 + y ** 2);
         p = this.spaceTypePerlin({ x, y }, false);
       } while (
         p >= initPerlinMax || // keep searching if above or equal to the max
         p < initPerlinMin || // keep searching if below the minimum
-        d >= this.worldRadius || // can't be out of bound
-        d <= spawnInnerRadius // can't be inside spawn area ring
+        d >= radius || // can't be out of bound
+        d <= spawnInnerRadius || // can't be inside spawn area ring
+        d >= radius *  discUpperBound || // can't be outside spawn disc
+        d <= radius *  discLowerBound // can't be inside spawn disc
       );
 
       // when setting up a new account in development mode, you can tell
@@ -1882,11 +1920,14 @@ class GameManager extends EventEmitter {
           );
           const planet = this.getPlanetWithId(homePlanetLocation.hash);
           const distFromOrigin = Math.sqrt(planetX ** 2 + planetY ** 2);
+          console.log(`upper ${discUpperBound * this.worldRadius} candidate ${distFromOrigin} lower ${discLowerBound * this.worldRadius}`);
           if (
             planetPerlin < initPerlinMax &&
             planetPerlin >= initPerlinMin &&
-            distFromOrigin < this.worldRadius &&
+            distFromOrigin < radius &&
             distFromOrigin > spawnInnerRadius &&
+            distFromOrigin <= radius * discUpperBound && // can't be outside spawn ring
+            distFromOrigin >= radius * discLowerBound && // can't be inside spawn ring
             planetLevel === MIN_PLANET_LEVEL &&
             planetType === PlanetType.PLANET &&
             (!planet || !planet.isInContract) // init will fail if planet has been initialized in contract already
@@ -1970,6 +2011,43 @@ class GameManager extends EventEmitter {
       .catch((err) => {
         this.onTxIntentFail(txIntent, err);
       });
+  }
+
+  public useSpecial(planetId: LocationId, index: number, bypassChecks = false) : GameManager {
+      console.log("gamemanager use special");
+      if (!bypassChecks) {
+        if (this.checkGameHasEnded()) return this;
+        const planetLoc = this.entityStore.getLocationOfPlanet(planetId);
+        if (!planetLoc) {
+          console.error('planet not found');
+          this.terminal.current?.println('[TX ERROR] Planet not found');
+          return this;
+        }
+        const planet = this.entityStore.getPlanetWithLocation(planetLoc);
+        if (!planet) {
+          console.error('planet not found');
+          this.terminal.current?.println('[TX ERROR] Planet not found');
+          return this;
+        }
+      }
+  
+      // localStorage.setItem(`${this.getAccount()?.toLowerCase()}-transferPlanet`, planetId);
+      // localStorage.setItem(`${this.getAccount()?.toLowerCase()}-transferOwner`, newOwner);
+  
+      const actionId = getRandomActionId();
+      const txIntent: UnconfirmedUseSpecial = {
+        actionId,
+        methodName: ContractMethodName.USE_SPECIAL,
+        planetId,
+        index
+      };
+      this.handleTxIntent(txIntent);
+  
+      this.contractsAPI
+        .useSpecial(planetId, index, actionId)
+        .catch((e) => this.onTxIntentFail(txIntent, e));
+    
+    return this;
   }
 
   /**
@@ -2479,8 +2557,11 @@ class GameManager extends EventEmitter {
 
     this.handleTxIntent(txIntent);
 
+    const tenMinutesInSeconds = 10 * 60;
+    const futureRadius = this.expectedRadius(Date.now() / 1000 + tenMinutesInSeconds)
+    console.log
     this.snarkHelper
-      .getMoveArgs(oldX, oldY, newX, newY, this.worldRadius, distMax)
+      .getMoveArgs(oldX, oldY, newX, newY, futureRadius, distMax)
       .then((callArgs) => {
         this.terminal.current?.println('MOVE: calculated SNARK with args:', TerminalTextStyle.Sub);
         this.terminal.current?.println(
@@ -2597,7 +2678,7 @@ class GameManager extends EventEmitter {
       actionId,
       methodName: ContractMethodName.PLANET_TRANSFER,
       planetId,
-      newOwner,
+      newOwner
     };
     this.handleTxIntent(txIntent);
 
@@ -2915,6 +2996,15 @@ class GameManager extends EventEmitter {
    */
   public getProcgenUtils() {
     return ProcgenUtils;
+  }
+
+  public expectedRadius(currTime: number = Date.now() / 1000) {
+    if(this.contractConstants.SHRINK > 0) {
+      return shrinkAlgorithm(currTime, this.contractConstants);
+    }
+    else {
+      return this.worldRadius;
+    }
   }
 
   /**

@@ -61,6 +61,7 @@ import {
   SubmittedInit,
   SubmittedMove,
   SubmittedPlanetTransfer,
+  SubmittedUseSpecial,
   SubmittedProspectPlanet,
   SubmittedReveal,
   SubmittedTx,
@@ -229,6 +230,7 @@ export class ContractsAPI extends EventEmitter {
           coreContract.filters.LocationRevealed(null, null, null, null).topics,
           coreContract.filters.PlanetHatBought(null, null, null).topics,
           coreContract.filters.PlanetProspected(null, null).topics,
+          coreContract.filters.PlanetHijacked(null, null).topics,
           coreContract.filters.PlanetSilverWithdrawn(null, null, null).topics,
           coreContract.filters.PlanetTransferred(null, null, null).topics,
           coreContract.filters.PlanetUpgraded(null, null, null, null).topics,
@@ -298,6 +300,17 @@ export class ContractsAPI extends EventEmitter {
           ContractsAPIEvent.PlanetTransferred,
           locationIdFromEthersBN(planetId),
           receiverAddress.toLowerCase() as EthAddress
+        );
+      },
+      [ContractEvent.PlanetHijacked]: async (
+        _hijackerAddress: string,
+        planetId: EthersBN,
+        _: Event
+      ) => {
+        this.emit(
+          ContractsAPIEvent.PlanetHijacked,
+          _hijackerAddress.toLowerCase() as EthAddress,
+          locationIdFromEthersBN(planetId),
         );
       },
       [ContractEvent.ArrivalQueued]: async (
@@ -467,6 +480,35 @@ export class ContractsAPI extends EventEmitter {
       planetId,
       newOwner,
     };
+
+    return this.waitFor(unminedTransferTx, tx.confirmed);
+  }
+
+  async useSpecial(
+    planetId: LocationId,
+    index: number,
+    actionId: string
+  ): Promise<void | providers.TransactionReceipt> {
+    console.log("ContractsAPI use special")
+    if (!this.txExecutor) {
+      throw new Error('no signer, cannot execute tx');
+    }
+    const tx = this.txExecutor.queueTransaction(
+      actionId,
+      this.coreContract,
+      ContractMethodName.USE_SPECIAL,
+      [locationIdToDecStr(planetId), index]
+    );
+
+    const unminedTransferTx: SubmittedUseSpecial = {
+      actionId,
+      methodName: ContractMethodName.USE_SPECIAL,
+      txHash: (await tx.submitted).hash,
+      sentAtTimestamp: Math.floor(Date.now() / 1000),
+      planetId,
+      index
+    };
+
 
     return this.waitFor(unminedTransferTx, tx.confirmed);
   }
@@ -776,6 +818,14 @@ export class ContractsAPI extends EventEmitter {
       PERLIN_MIRROR_Y,
     } = await this.makeCall(this.coreContract.snarkConstants);
     const {
+      SHRINK,
+      SHRINK_START,
+      ROUND_END,
+      DISC_UPPER_BOUND,
+      DISC_LOWER_BOUND,
+      MIN_RADIUS,
+      DESTROY_THRESHOLD,
+      INITIAL_WORLD_RADIUS,
       MAX_NATURAL_PLANET_LEVEL,
       TIME_FACTOR_HUNDREDTHS,
       PERLIN_THRESHOLD_1,
@@ -789,11 +839,13 @@ export class ContractsAPI extends EventEmitter {
       PLANET_RARITY,
       PHOTOID_ACTIVATION_DELAY,
       LOCATION_REVEAL_COOLDOWN,
+      SPECIAL_WEAPONS
     } = await this.makeCall(this.coreContract.gameConstants);
 
     const TOKEN_MINT_END_SECONDS = (
       await this.makeCall(this.coreContract.TOKEN_MINT_END_TIMESTAMP)
     ).toNumber();
+
 
     const upgrades = decodeUpgradeBranches(await this.makeCall(this.coreContract.getUpgrades));
 
@@ -818,6 +870,14 @@ export class ContractsAPI extends EventEmitter {
     const constants: ContractConstants = {
       DISABLE_ZK_CHECKS,
 
+      INITIAL_WORLD_RADIUS: INITIAL_WORLD_RADIUS.toNumber(),
+      SHRINK: SHRINK.toNumber(),
+      SHRINK_START: SHRINK_START.toNumber(),
+      ROUND_END: ROUND_END.toNumber(),
+      MIN_RADIUS: MIN_RADIUS.toNumber(),
+      DISC_LOWER_BOUND: DISC_LOWER_BOUND.toNumber(),
+      DISC_UPPER_BOUND: DISC_UPPER_BOUND.toNumber(),
+
       PLANETHASH_KEY: PLANETHASH_KEY.toNumber(),
       SPACETYPE_KEY: SPACETYPE_KEY.toNumber(),
       BIOMEBASE_KEY: BIOMEBASE_KEY.toNumber(),
@@ -826,6 +886,7 @@ export class ContractsAPI extends EventEmitter {
       PERLIN_MIRROR_Y,
       CLAIM_PLANET_COOLDOWN: 0,
       TOKEN_MINT_END_SECONDS,
+      DESTROY_THRESHOLD: DESTROY_THRESHOLD.toNumber(),
       MAX_NATURAL_PLANET_LEVEL: MAX_NATURAL_PLANET_LEVEL.toNumber(),
       TIME_FACTOR_HUNDREDTHS: TIME_FACTOR_HUNDREDTHS.toNumber(),
       PERLIN_THRESHOLD_1: PERLIN_THRESHOLD_1.toNumber(),
@@ -854,6 +915,7 @@ export class ContractsAPI extends EventEmitter {
       planetLevelThresholds,
       planetCumulativeRarities,
       upgrades,
+      SPECIAL_WEAPONS
     };
 
     return constants;
