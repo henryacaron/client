@@ -654,6 +654,17 @@ class GameManager extends EventEmitter {
         }
       )
       .on(
+        ContractsAPIEvent.PlanetDestroyed,
+        async (planetId: LocationId, oldOwner: EthAddress) => {
+          await gameManager.hardRefreshPlanet(planetId);
+          const planetAfter = gameManager.getPlanetWithId(planetId);
+
+          if (planetAfter && oldOwner === gameManager.account) {
+            NotificationManager.getInstance().planetDestroyed(planetAfter);
+          }
+        }
+      )
+      .on(
         ContractsAPIEvent.PlanetHijacked,
         async (newOwner: EthAddress, planetId: LocationId) => {
           await gameManager.hardRefreshPlanet(planetId);
