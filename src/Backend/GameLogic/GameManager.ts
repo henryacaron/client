@@ -216,7 +216,7 @@ class GameManager extends EventEmitter {
   /**
    * @todo change this to the correct timestamp each round.
    */
-  private readonly endTimeSeconds: number = 1643587533; // jan 2022
+  private readonly endTimeSeconds: number = 1672531200; // jan 2022
 
   /**
    * An interface to the blockchain that is a little bit lower-level than {@link ContractsAPI}. It
@@ -650,6 +650,17 @@ class GameManager extends EventEmitter {
 
           if (planetAfter && newOwner === gameManager.account) {
             NotificationManager.getInstance().receivedPlanet(planetAfter);
+          }
+        }
+      )
+      .on(
+        ContractsAPIEvent.PlanetDestroyed,
+        async (planetId: LocationId, oldOwner: EthAddress) => {
+          await gameManager.hardRefreshPlanet(planetId);
+          const planetAfter = gameManager.getPlanetWithId(planetId);
+
+          if (planetAfter && oldOwner === gameManager.account) {
+            NotificationManager.getInstance().planetDestroyed(planetAfter);
           }
         }
       )

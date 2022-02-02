@@ -233,6 +233,7 @@ export class ContractsAPI extends EventEmitter {
           coreContract.filters.PlanetHijacked(null, null).topics,
           coreContract.filters.PlanetSilverWithdrawn(null, null, null).topics,
           coreContract.filters.PlanetTransferred(null, null, null).topics,
+          coreContract.filters.PlanetDestroyed(null, null).topics,
           coreContract.filters.PlanetUpgraded(null, null, null, null).topics,
           coreContract.filters.PlayerInitialized(null, null).topics,
         ].map((topicsOrUndefined) => (topicsOrUndefined || [])[0]),
@@ -300,6 +301,17 @@ export class ContractsAPI extends EventEmitter {
           ContractsAPIEvent.PlanetTransferred,
           locationIdFromEthersBN(planetId),
           receiverAddress.toLowerCase() as EthAddress
+        );
+      },
+      [ContractEvent.PlanetDestroyed]: async (
+        _senderAddress: string,
+        planetId: EthersBN,
+        _: Event
+      ) => {
+        this.emit(
+          ContractsAPIEvent.PlanetDestroyed,
+          locationIdFromEthersBN(planetId),
+          _senderAddress.toLowerCase() as EthAddress
         );
       },
       [ContractEvent.PlanetHijacked]: async (
@@ -378,6 +390,7 @@ export class ContractsAPI extends EventEmitter {
     coreContract.removeAllListeners(ContractEvent.PlanetUpgraded);
     coreContract.removeAllListeners(ContractEvent.PlanetHatBought);
     coreContract.removeAllListeners(ContractEvent.PlanetTransferred);
+    coreContract.removeAllListeners(ContractEvent.PlanetDestroyed);
     coreContract.removeAllListeners(ContractEvent.ArtifactFound);
     coreContract.removeAllListeners(ContractEvent.ArtifactDeposited);
     coreContract.removeAllListeners(ContractEvent.ArtifactWithdrawn);

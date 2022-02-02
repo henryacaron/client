@@ -244,11 +244,11 @@ export function SpecialsPane({ hook }: { hook: ModalHook }) {
       description: 'Blow up any planet',
       key: 1,
     },
-    {
-      title: 'Strike Gold',
-      description: 'Max out energy and silver on any planet',
-      key: 2,
-    },
+    // {
+    //   title: 'Strike Gold',
+    //   description: 'Max out energy and silver on any planet',
+    //   key: 2,
+    // },
   ];
   const headers = ['Weapon', '  ', 'Description', ''];
   const alignments: Array<'l' | 'c' | 'r'> = ['l', 'l', 'l', 'r'];
