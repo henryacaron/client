@@ -43,6 +43,7 @@ import {
 import { NotificationsPane } from './Notifications';
 import { SidebarPane } from './SidebarPane';
 import { TopBar } from './TopBar';
+import { TopRightBar } from './TopRightBar';
 
 export function GameWindowLayout({
   terminalVisible,
@@ -57,6 +58,8 @@ export function GameWindowLayout({
 
   const yourArtifactsHook = useState<boolean>(false);
   const twitterVerifyHook = useState<boolean>(false);
+  const stockpileHook = useState<boolean>(false);
+
   const settingsHook = useState<boolean>(false);
   const privateHook = useState<boolean>(false);
   const pluginsHook = useState<boolean>(false);
@@ -161,6 +164,12 @@ export function GameWindowLayout({
         </BorderlessPane>
       </TopBarPaneContainer>
 
+      <TopRightBarPaneContainer>
+        <BorderlessPane>
+          <TopRightBar stockpileHook={stockpileHook} />
+        </BorderlessPane>
+      </TopRightBarPaneContainer>
+
       {/* all modals rendered into here */}
       <div ref={modalsContainerRef}>
         <HelpPane hook={helpHook} />
@@ -227,3 +236,14 @@ const TopBarPaneContainer = styled.div`
   top: 0;
   left: 0;
 `;
+
+const TopRightBarPaneContainer = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-start;
+  width: 100vw;
+  position: absolute;
+  top: 0;
+  left: 0;
+`;
+

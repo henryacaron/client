@@ -216,7 +216,7 @@ class GameManager extends EventEmitter {
   /**
    * @todo change this to the correct timestamp each round.
    */
-  private readonly endTimeSeconds: number = 1643587533; // jan 2022
+  private readonly endTimeSeconds: number = 1673587533; // jan 2022
 
   /**
    * An interface to the blockchain that is a little bit lower-level than {@link ContractsAPI}. It
@@ -1168,6 +1168,12 @@ class GameManager extends EventEmitter {
   public getPlayerScore(addr: EthAddress): number | undefined {
     const player = this.players.get(addr);
     return player?.score;
+  }
+
+  public getPlayerStockpile(addr: EthAddress): number | undefined {
+    const player = this.players.get(addr);
+    console.log(`player stockpile: ${player?.stockpile}`)
+    return player?.stockpile;
   }
 
   private initMiningManager(homeCoords: WorldCoords, cores?: number): void {

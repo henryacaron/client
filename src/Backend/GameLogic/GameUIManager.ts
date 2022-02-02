@@ -1063,6 +1063,10 @@ class GameUIManager extends EventEmitter {
     return this.gameManager.getPlayerScore(player);
   }
 
+  public getPlayerStockpile(player: EthAddress): number | undefined {
+    return this.gameManager.getPlayerStockpile(player);
+  }
+
   public upgrade(planet: Planet, branch: number): void {
     // TODO: do something like JSON.stringify(args) so we know formatting is correct
     this.terminal.current?.printShellLn(`df.upgrade('${planet.locationId}', ${branch})`);

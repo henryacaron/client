@@ -93,6 +93,14 @@ export function ScoreTooltipPane() {
   );
 }
 
+export function StockpileTooltipPane() {
+  return (
+    <>
+      Store <SilverLabel /> extracted from planets and use it to upgrade player elements 
+    </>
+  );
+}
+
 export function MiningPauseTooltipPane() {
   return (
     <>
@@ -447,6 +455,7 @@ export function TooltipContent({ name }: { name: TooltipName | undefined }) {
   if (name === TooltipName.SelectedSilver) return <SelectedSilverTooltipPane />;
   if (name === TooltipName.Rank) return <RankTooltipPane />;
   if (name === TooltipName.Score) return <ScoreTooltipPane />;
+  if (name === TooltipName.Stockpile) return <StockpileTooltipPane />;
   if (name === TooltipName.MiningPause) return <MiningPauseTooltipPane />;
   if (name === TooltipName.MiningTarget) return <MiningTargetTooltipPane />;
   if (name === TooltipName.CurrentMining) return <CurrentMiningTooltipPane />;

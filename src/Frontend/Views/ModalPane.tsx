@@ -29,6 +29,7 @@ export const enum ModalName {
   PlanetDex,
   UpgradeDetails,
   TwitterVerify,
+  Stockpile,
   Broadcast,
   Hats,
   Settings,

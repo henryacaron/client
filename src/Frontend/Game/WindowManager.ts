@@ -38,6 +38,7 @@ export const enum TooltipName {
   SelectedSilver,
   Rank,
   Score,
+  Stockpile,
   MiningPause,
   MiningTarget,
   HashesPerSec,
