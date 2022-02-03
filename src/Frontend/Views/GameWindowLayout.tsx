@@ -164,11 +164,11 @@ export function GameWindowLayout({
         </BorderlessPane>
       </TopBarPaneContainer>
 
-      <TopRightBarPaneContainer>
+      {/* <TopRightBarPaneContainer>
         <BorderlessPane>
           <TopRightBar stockpileHook={stockpileHook} />
         </BorderlessPane>
-      </TopRightBarPaneContainer>
+      </TopRightBarPaneContainer> */}
 
       {/* all modals rendered into here */}
       <div ref={modalsContainerRef}>

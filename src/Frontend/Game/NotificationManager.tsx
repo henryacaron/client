@@ -89,6 +89,7 @@ export const enum NotificationType {
   ArtifactFound,
   ReceivedPlanet,
   Generic,
+  SentToStockpile
 }
 
 const BiomeNotificationMap = {
@@ -220,6 +221,8 @@ class NotificationManager extends EventEmitter {
       case NotificationType.PlanetDestroyed:
         return <PlanetLost height={'48px'} width={'48px'} />;
         break;
+      case NotificationType.SentToStockpile:
+        return <Generic height={'48px'} width={'48px'} />;
         break;
       case NotificationType.PlanetLost:
         return <PlanetLost height={'48px'} width={'48px'} />;
@@ -512,6 +515,15 @@ class NotificationManager extends EventEmitter {
       NotificationType.CanUpgrade,
       <span>
         You destroyed <PlanetNameLink planet={planet} />, boom! <br />
+      </span>
+    );
+  }
+
+  sentToStockpile(silver: Number): void {
+    this.notify(
+      NotificationType.CanUpgrade,
+      <span>
+        🤑 You sent {silver} silver to your stockpile! 🤑 <br />
       </span>
     );
   }

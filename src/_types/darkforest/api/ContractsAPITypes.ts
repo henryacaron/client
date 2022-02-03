@@ -54,6 +54,7 @@ export const enum ContractEvent {
   ArtifactActivated = 'ArtifactActivated',
   ArtifactDeactivated = 'ArtifactDeactivated',
   PlanetSilverWithdrawn = 'PlanetSilverWithdrawn',
+  SentToStockpile = 'SentToStockpile'
 }
 
 export const enum ContractsAPIEvent {
@@ -69,7 +70,7 @@ export const enum ContractsAPIEvent {
   TxReverted = 'TxReverted',
   PlanetTransferred = 'PlanetTransferred',
   PlanetClaimed = 'PlanetClaimed',
-  PlanetHijacked = 'PlanetHijacked'
+  PlanetHijacked = 'PlanetHijacked',
 }
 
 // planet locationID(BigInt), branch number

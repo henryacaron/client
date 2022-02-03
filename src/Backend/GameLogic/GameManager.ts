@@ -51,6 +51,7 @@ import {
   VoyageId,
   WorldCoords,
   WorldLocation,
+  UnconfirmedSendToStockpile,
 } from '@darkforest_eth/types';
 import { BigInteger } from 'big-integer';
 import delay from 'delay';
@@ -1698,6 +1699,49 @@ class GameManager extends EventEmitter {
       });
 
     return this;
+  }
+
+  /**
+   * Reveals a planet's location on-chain.
+   */
+   public sendToStockpile(locationId: LocationId, amount: number, bypassChecks = false) {
+    if (!bypassChecks) {
+      if (this.checkGameHasEnded()) return this;
+      if (!this.account) return this;
+
+      const planet = this.entityStore.getPlanetWithId(locationId);
+      if (!planet) {
+        throw new Error('tried to stockpile silver from an unknown planet');
+      }
+      if (planet.owner !== this.account) {
+        throw new Error('can only stockpile silver from a planet you own');
+      }
+      if (planet.unconfirmedSendToStockpile) {
+        throw new Error('a stockpile action is already in progress for this planet');
+      }
+      if (amount > planet.silver) {
+        throw new Error('not enough silver to stockpile!');
+      }
+      if (amount === 0) {
+        throw new Error('must stockpile more than 0 silver!');
+      }
+      if (planet.destroyed) {
+        throw new Error("can't stockpile silver from a destroyed planet");
+      }
+    }
+
+    localStorage.setItem(`${this.getAccount()?.toLowerCase()}-stockpileSilverPlanet`, locationId);
+
+    const actionId = getRandomActionId();
+    const txIntent: UnconfirmedSendToStockpile = {
+      actionId,
+      methodName: ContractMethodName.SEND_TO_STOCKPILE,
+      locationId,
+      amount,
+    };
+
+    this.handleTxIntent(txIntent);
+    this.contractsAPI.sendToStockpile(txIntent).catch((e) => this.onTxIntentFail(txIntent, e));
   }
 
   /**

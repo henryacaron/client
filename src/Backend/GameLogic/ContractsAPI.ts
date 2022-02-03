@@ -60,6 +60,7 @@ import {
   SubmittedFindArtifact,
   SubmittedInit,
   SubmittedMove,
+  SubmittedSendToStockpile,
   SubmittedPlanetTransfer,
   SubmittedUseSpecial,
   SubmittedProspectPlanet,
@@ -77,6 +78,7 @@ import {
   UnconfirmedWithdrawSilver,
   VoyageId,
   WorldLocation,
+  UnconfirmedSendToStockpile,
 } from '@darkforest_eth/types';
 import bigInt from 'big-integer';
 import { BigNumber as EthersBN, ContractFunction, Event, providers } from 'ethers';
@@ -235,6 +237,8 @@ export class ContractsAPI extends EventEmitter {
           coreContract.filters.PlanetTransferred(null, null, null).topics,
           coreContract.filters.PlanetUpgraded(null, null, null, null).topics,
           coreContract.filters.PlayerInitialized(null, null).topics,
+          coreContract.filters.SentToStockpile(null, null, null).topics,
+
         ].map((topicsOrUndefined) => (topicsOrUndefined || [])[0]),
       ] as Array<string | Array<string>>,
     };
@@ -365,6 +369,15 @@ export class ContractsAPI extends EventEmitter {
         this.emit(ContractsAPIEvent.PlanetUpdate, locationIdFromEthersBN(location));
         this.emit(ContractsAPIEvent.PlayerUpdate, address(player));
       },
+      [ContractEvent.SentToStockpile]: async (
+        player: string,
+        location: EthersBN,
+        _amount: EthersBN,
+        _: Event
+      ) => {
+        this.emit(ContractsAPIEvent.PlanetUpdate, locationIdFromEthersBN(location));
+        this.emit(ContractsAPIEvent.PlayerUpdate, address(player));
+      },
     };
 
     this.ethConnection.subscribeToContractEvents(coreContract, eventHandlers, filter);
@@ -385,6 +398,8 @@ export class ContractsAPI extends EventEmitter {
     coreContract.removeAllListeners(ContractEvent.ArtifactDeactivated);
     coreContract.removeAllListeners(ContractEvent.LocationRevealed);
     coreContract.removeAllListeners(ContractEvent.PlanetSilverWithdrawn);
+    coreContract.removeAllListeners(ContractEvent.SentToStockpile);
+
   }
 
   public getContractAddress(): EthAddress {
@@ -511,6 +526,29 @@ export class ContractsAPI extends EventEmitter {
 
 
     return this.waitFor(unminedTransferTx, tx.confirmed);
+  }
+
+  async sendToStockpile(
+    action: UnconfirmedSendToStockpile
+  ): Promise<void | providers.TransactionReceipt> {
+    if (!this.txExecutor) {
+      throw new Error('no signer, cannot execute tx');
+    }
+
+    const args = [locationIdToDecStr(action.locationId), action.amount * CONTRACT_PRECISION];
+    const tx = this.txExecutor.queueTransaction(
+      action.actionId,
+      this.coreContract,
+      ContractMethodName.SEND_TO_STOCKPILE,
+      args
+    );
+    const unminedSendtoStockpile: SubmittedSendToStockpile = {
+      ...action,
+      txHash: (await tx.submitted).hash,
+      sentAtTimestamp: Math.floor(Date.now() / 1000),
+    };
+
+    return this.waitFor(unminedSendtoStockpile, tx.confirmed);
   }
 
   // throws if tx initialization fails

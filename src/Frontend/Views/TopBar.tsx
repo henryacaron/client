@@ -17,7 +17,7 @@ const TopBarContainer = styled.div`
   padding: 0 2px;
 `;
 
-function BoardPlacement({ account }: { account: EthAddress | undefined }) {
+function BoardPlacement({ account, type } : { account: EthAddress | undefined, type: string }) {
   const uiManager = useUIManager();
   const player = usePlayer(uiManager, account);
 
@@ -26,17 +26,19 @@ function BoardPlacement({ account }: { account: EthAddress | undefined }) {
   if (!player.value) {
     content = <Sub>n/a</Sub>;
   } else {
+    const val = type == "score" ? player.value.score : player.value.stockpile;
     let formattedScore = 'n/a';
-    if (player.value.score !== undefined && player.value.score !== null) {
-      formattedScore = player.value.score.toLocaleString();
+    if (val !== undefined && val !== null) {
+      formattedScore = val.toLocaleString();
     }
 
     content = (
       <Sub>
-        <TooltipTrigger name={TooltipName.Score}>
-          score: <Text>{formattedScore}</Text>
+        <TooltipTrigger name={type == "score" ? TooltipName.Score : TooltipName.Stockpile}>
+          {type}: <Text>{formattedScore}</Text>
         </TooltipTrigger>
       </Sub>
+      
     );
   }
 
@@ -70,7 +72,9 @@ export function TopBar({ twitterVerifyHook }: { twitterVerifyHook: ModalHook }) 
           text={!twitter ? 'Connect' : undefined}
         />
         <EmSpacer width={1} />
-        <BoardPlacement account={account} />
+        <BoardPlacement account={account} type = {"score"} />
+        <EmSpacer width={1} />
+        <BoardPlacement account={account} type = {"stockpile"} />
         <EmSpacer width={1} />
       </AlignCenterHorizontally>
       <NetworkHealth />

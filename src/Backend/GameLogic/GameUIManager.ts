@@ -417,8 +417,22 @@ class GameUIManager extends EventEmitter {
     return promise;
   }
 
-  public revealLocation(locationId: LocationId) {
+  public revealLocation(locationId: LocationId)  {
     this.gameManager.revealLocation(locationId);
+  }
+
+  public sendToStockpile(locationId: LocationId, amount: number) {
+    const dontShowWarningStorageKey = `${this.getAccount()?.toLowerCase()}-stockpileWarningAcked`;
+
+    if (localStorage.getItem(dontShowWarningStorageKey) !== 'true') {
+      localStorage.setItem(dontShowWarningStorageKey, 'true');
+      const confirmationText =
+        `Are you sure you want stockpile this silver? Once you stockpile it, you ` +
+        `cannot stockpile it again. Your stockpiled silver amount will be added to your stockpile. You'll only see this warning once!`;
+      if (!confirm(confirmationText)) return;
+    }
+
+    this.gameManager.sendToStockpile(locationId, amount);  
   }
 
   public getNextBroadcastAvailableTimestamp() {

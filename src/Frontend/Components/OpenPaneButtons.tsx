@@ -1,6 +1,8 @@
 import { LocationId } from '@darkforest_eth/types';
 import React, { useCallback } from 'react';
 import { BroadcastPane, BroadcastPaneHelpContent } from '../Panes/BroadcastPane';
+import { StockpilePane, StockpilePaneHelpContent } from '../Panes/StockpilePane';
+
 import { HatPane } from '../Panes/HatPane';
 import {
   ManagePlanetArtifactsHelpContent,
@@ -13,6 +15,7 @@ import {
   TOGGLE_HAT_PANE,
   TOGGLE_PLANET_ARTIFACTS_PANE,
   TOGGLE_UPGRADES_PANE,
+  TOGGLE_STOCKPILE_PANE
 } from '../Utils/ShortcutConstants';
 import { ModalHandle } from '../Views/ModalPane';
 import { AlignCenterHorizontally, CenteredText, ShortcutButton } from './CoreUI';
@@ -99,6 +102,28 @@ export function OpenBroadcastPaneButton({
     />
   );
 }
+
+export function OpenStockPilePaneButton({
+  modal,
+  planetId,
+  shortcutDisabled,
+}: {
+  modal: ModalHandle;
+  planetId: LocationId | undefined;
+  shortcutDisabled?: boolean;
+}) {
+  return (
+    <OpenPaneButton
+      modal={modal}
+      title='Stockpile'
+      shortcutKey={TOGGLE_STOCKPILE_PANE}
+      element={() => <StockpilePane modal={modal} initialPlanetId={planetId} />}
+      helpContent={StockpilePaneHelpContent()}
+      shortcutDisabled={shortcutDisabled}
+    />
+  );
+}
+
 
 export function OpenUpgradeDetailsPaneButton({
   modal,

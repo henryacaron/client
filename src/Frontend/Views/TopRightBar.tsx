@@ -27,7 +27,7 @@ function BoardPlacement({ account }: { account: EthAddress | undefined }) {
     content = <Sub>n/a</Sub>;
   } else {
     let formattedScore = 'n/a';
-    console.log(`stockpile : ${JSON.stringify(player.value)}`)
+    // console.log(`stockpile : ${JSON.stringify(player.value)}`)
     if (player.value.stockpile !== undefined && player.value.stockpile !== null) {
       formattedScore = player.value.stockpile.toLocaleString();
     }

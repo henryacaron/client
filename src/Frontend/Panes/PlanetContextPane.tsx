@@ -8,6 +8,7 @@ import {
   OpenHatPaneButton,
   OpenManagePlanetArtifactsButton,
   OpenUpgradeDetailsPaneButton,
+  OpenStockPilePaneButton
 } from '../Components/OpenPaneButtons';
 import { useAccount, useSelectedPlanet, useUIManager } from '../Utils/AppHooks';
 import { useEmitterValue } from '../Utils/EmitterHooks';
@@ -15,6 +16,7 @@ import { ModalHandle, ModalHook, ModalPane } from '../Views/ModalPane';
 import { PlanetCard, PlanetCardTitle } from '../Views/PlanetCard';
 import { getNotifsForPlanet, PlanetNotifications } from '../Views/PlanetNotifications';
 import { SendResources } from '../Views/SendResources';
+// import { SendResources } from '../Views/SendResources';
 import { WithdrawSilver } from '../Views/WithdrawSilver';
 
 function PlanetContextPaneContent({
@@ -81,10 +83,14 @@ function PlanetContextPaneContent({
           </Padded>,
         ]}
       </VerticalSplit>
-      {owned && planet.value?.planetType === PlanetType.TRADING_POST && (
-        <WithdrawSilver wrapper={planet} />
-      )}
-      {notifs.length > 0 && <PlanetNotifications planet={planet} notifs={notifs} />}
+          {owned && planet.value?.silver &&
+          <OpenStockPilePaneButton
+            modal={modal}
+            planetId={planet.value?.locationId}
+            shortcutDisabled={!modal.isActive}
+          />}
+      {notifs.length > 0 && <PlanetNotifications planet={planet} notifs={notifs} />}{' '}
+
     </Padded>
   );
 }

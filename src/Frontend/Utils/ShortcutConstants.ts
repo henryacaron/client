@@ -15,6 +15,7 @@ export const TOGGLE_SPECIALS_PANE = 'b';
 export const TOGGLE_PLANET_ARTIFACTS_PANE = 's';
 export const TOGGLE_HAT_PANE = 'x';
 export const TOGGLE_BROADCAST_PANE = 'z';
+export const TOGGLE_STOCKPILE_PANE = 'p';
 export const TOGGLE_UPGRADES_PANE = 'a';
 export const TOGGLE_SEND = 'q';
 export const EXIT_PANE = SpecialKey.Escape;

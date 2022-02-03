@@ -30,8 +30,8 @@ export function AccountLabel({
             {' '}
             <TextPreview
               text={ethAddress || uiManager.getAccount() || '<no account>'}
-              unFocusedWidth={'50px'}
-              focusedWidth={'50px'}
+              unFocusedWidth={'10px'}
+              focusedWidth={'10px'}
             />
           </Sub>
         )}
